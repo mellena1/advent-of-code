@@ -1,0 +1,9 @@
+[package]
+name = "day-16"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+petgraph = "0.6.5"
+grid = { path = "../grid" }
+strum = { version = "0.26.3", features = ["derive"] }

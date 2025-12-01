@@ -12,6 +12,7 @@ pub fn main() !void {
     dial.execute_turns(turns.items);
 
     std.debug.print("Part 1: {d}\n", .{dial.times_at_zero});
+    std.debug.print("Part 2: {d}\n", .{dial.times_passing_zero});
 }
 
 const TurnDirection = enum {
@@ -66,21 +67,35 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) 
 const Dial = struct {
     cur_pos: u8 = 50, // dial starts at 50
     times_at_zero: u32 = 0,
+    times_passing_zero: u32 = 0,
 
     pub fn execute_turns(self: *Dial, turns: []Turn) void {
         for (turns) |turn| {
             switch (turn.direction) {
-                .left => self.set_pos(@as(i32, self.cur_pos) - @as(i32, @intCast(turn.amount))),
-                .right => self.set_pos(@as(i32, self.cur_pos) + @as(i32, @intCast(turn.amount))),
-            }
-
-            if (self.cur_pos == 0) {
-                self.times_at_zero += 1;
+                .left => self.set_pos(-1 * @as(i32, @intCast(turn.amount))),
+                .right => self.set_pos(@as(i32, @intCast(turn.amount))),
             }
         }
     }
 
-    fn set_pos(self: *Dial, new_pos: i32) void {
-        self.cur_pos = @as(u8, @intCast(@mod(new_pos, 100)));
+    fn set_pos(self: *Dial, turn_amount: i32) void {
+        const next_pos_unbounded = @as(i32, self.cur_pos) + turn_amount;
+
+        if (turn_amount > 0) {
+            self.times_passing_zero += @intCast(@divFloor(next_pos_unbounded, 100));
+        } else if (next_pos_unbounded <= 0) {
+            // account for case of already being at 0 and then going backwards
+            if (self.cur_pos != 0) {
+                self.times_passing_zero += 1;
+            }
+
+            self.times_passing_zero += @as(u32, @intCast(@divFloor(@abs(next_pos_unbounded), 100)));
+        }
+
+        self.cur_pos = @as(u8, @intCast(@mod(next_pos_unbounded, 100)));
+
+        if (self.cur_pos == 0) {
+            self.times_at_zero += 1;
+        }
     }
 };

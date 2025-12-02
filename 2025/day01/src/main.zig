@@ -1,11 +1,14 @@
 const std = @import("std");
+const utils = @import("advent_of_code_utils");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var turns = try read_file(allocator, "input.txt");
+    const filename = try utils.args.get_file_name_from_args(allocator);
+
+    var turns = try read_file(allocator, filename);
     defer turns.deinit(allocator);
 
     var dial = Dial{};
@@ -30,38 +33,26 @@ const ParseError = error{
 };
 
 fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) {
-    const file = try std.fs.cwd().openFile(filename, .{ .mode = .read_only });
-    defer file.close();
+    const TurnParser = struct {
+        fn parse(line: []const u8) !Turn {
+            const dir = switch (line[0]) {
+                'L' => TurnDirection.left,
+                'R' => TurnDirection.right,
+                else => return ParseError.InvalidDirection,
+            };
 
-    var buffer: [4096]u8 = undefined;
-    var reader = file.reader(&buffer);
+            const amt = try std.fmt.parseInt(u32, line[1..], 10);
 
-    var turns = std.ArrayList(Turn).empty;
-
-    while (reader.interface.takeDelimiterExclusive('\n')) |line| {
-        if (line.len == 0) {
-            std.debug.print("line 0 len\n", .{});
-            break;
+            return Turn{
+                .direction = dir,
+                .amount = amt,
+            };
         }
+    };
 
-        const dir = switch (line[0]) {
-            'L' => TurnDirection.left,
-            'R' => TurnDirection.right,
-            else => return ParseError.InvalidDirection,
-        };
+    const fileparser = utils.fileparse.PerLineParser(Turn, TurnParser.parse).init(gpa);
 
-        const amt = try std.fmt.parseInt(u32, line[1..], 10);
-
-        try turns.append(gpa, Turn{
-            .direction = dir,
-            .amount = amt,
-        });
-
-        // toss newline byte
-        reader.interface.toss(1);
-    } else |err| if (err != error.EndOfStream) return err;
-
-    return turns;
+    return fileparser.parse(filename);
 }
 
 const Dial = struct {

@@ -1,8 +1,7 @@
 const std = @import("std");
 
-/// Returns a struct that can read a file per line and call a generic function on the line
-/// to generate an ArrayList of the values
-pub fn PerLineParser(comptime T: type, comptime handle_line: fn (line: []const u8) anyerror!T) type {
+/// Generic parser that reads in a file, splits by delimiter, and runs handler on every chunk to map to a list of type T
+pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (str: []const u8) anyerror!T) type {
     return struct {
         gpa: std.mem.Allocator,
 
@@ -18,17 +17,21 @@ pub fn PerLineParser(comptime T: type, comptime handle_line: fn (line: []const u
             var reader = file.reader(&buffer);
 
             var list = try std.ArrayList(T).initCapacity(self.gpa, 1024);
+            errdefer list.deinit(self.gpa);
 
-            while (reader.interface.takeDelimiterExclusive('\n')) |line| {
-                // toss newline byte after each loop iteration
-                defer reader.interface.toss(1);
+            while (reader.interface.takeDelimiter(delimiter)) |opt_line| {
+                if (opt_line == null) {
+                    break;
+                }
+
+                const line = opt_line.?;
 
                 // skip empty lines
                 if (line.len == 0) {
                     continue;
                 }
 
-                const new_item = try handle_line(line);
+                const new_item = try handler(line);
 
                 try list.append(self.gpa, new_item);
             } else |err| if (err != error.EndOfStream) return err;
@@ -36,6 +39,12 @@ pub fn PerLineParser(comptime T: type, comptime handle_line: fn (line: []const u
             return list;
         }
     };
+}
+
+/// Returns a struct that can read a file per line and call a generic function on the line
+/// to generate an ArrayList of the values
+pub fn PerLineParser(comptime T: type, comptime handle_line: fn (line: []const u8) anyerror!T) type {
+    return DelimiterParser(T, '\n', handle_line);
 }
 
 test "basic u8 parsing per line" {

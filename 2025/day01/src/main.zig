@@ -90,3 +90,16 @@ const Dial = struct {
         }
     }
 };
+
+test "AOC examples are right" {
+    const allocator = std.heap.page_allocator;
+
+    var turns = try read_file(allocator, "example.txt");
+    defer turns.deinit(allocator);
+
+    var dial = Dial{};
+    dial.execute_turns(turns.items);
+
+    try std.testing.expectEqual(dial.times_at_zero, 3);
+    try std.testing.expectEqual(dial.times_passing_zero, 6);
+}

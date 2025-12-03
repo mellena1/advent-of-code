@@ -54,7 +54,7 @@ const InvalidRange = error.InvalidRange;
 
 fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(IDRange) {
     const Parser = struct {
-        fn parse(str: []const u8) !IDRange {
+        fn parse(_: std.mem.Allocator, str: []const u8) !IDRange {
             const trimmed = std.mem.trim(u8, str, " \t\n\r");
             var it = std.mem.splitAny(u8, trimmed, "-");
 

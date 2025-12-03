@@ -34,7 +34,7 @@ const ParseError = error{
 
 fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) {
     const TurnParser = struct {
-        fn parse(line: []const u8) !Turn {
+        fn parse(_: std.mem.Allocator, line: []const u8) !Turn {
             const dir = switch (line[0]) {
                 'L' => TurnDirection.left,
                 'R' => TurnDirection.right,

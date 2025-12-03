@@ -1,7 +1,7 @@
 const std = @import("std");
 
 /// Generic parser that reads in a file, splits by delimiter, and runs handler on every chunk to map to a list of type T
-pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (str: []const u8) anyerror!T) type {
+pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (allocator: std.mem.Allocator, str: []const u8) anyerror!T) type {
     return struct {
         gpa: std.mem.Allocator,
 
@@ -31,7 +31,7 @@ pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handle
                     continue;
                 }
 
-                const new_item = try handler(line);
+                const new_item = try handler(self.gpa, line);
 
                 try list.append(self.gpa, new_item);
             } else |err| if (err != error.EndOfStream) return err;
@@ -43,7 +43,7 @@ pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handle
 
 /// Returns a struct that can read a file per line and call a generic function on the line
 /// to generate an ArrayList of the values
-pub fn PerLineParser(comptime T: type, comptime handle_line: fn (line: []const u8) anyerror!T) type {
+pub fn PerLineParser(comptime T: type, comptime handle_line: fn (allocator: std.mem.Allocator, line: []const u8) anyerror!T) type {
     return DelimiterParser(T, '\n', handle_line);
 }
 

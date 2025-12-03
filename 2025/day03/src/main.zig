@@ -10,13 +10,24 @@ pub fn main() !void {
 
     const battery_banks = try read_file(allocator, filename);
     std.debug.print("Part 1: {d}\n", .{part1(battery_banks.items)});
+    std.debug.print("Part 2: {d}\n", .{part2(battery_banks.items)});
 }
 
 fn part1(battery_banks: []BatteryBank) u64 {
     var sum: u64 = 0;
 
     for (battery_banks) |bank| {
-        sum += bank.find_highest_joltage();
+        sum += bank.find_highest_joltage(2);
+    }
+
+    return sum;
+}
+
+fn part2(battery_banks: []BatteryBank) u64 {
+    var sum: u64 = 0;
+
+    for (battery_banks) |bank| {
+        sum += bank.find_highest_joltage(12);
     }
 
     return sum;
@@ -25,29 +36,31 @@ fn part1(battery_banks: []BatteryBank) u64 {
 const BatteryBank = struct {
     batteries: []u8,
 
-    pub fn find_highest_joltage(self: BatteryBank) u64 {
-        var highest_first_digit: u8 = 0;
-        var first_digit_idx: u64 = 0;
-        for (self.batteries, 0..) |n, i| {
-            // highest first digit can't be the last battery
-            if (i == self.batteries.len - 1) {
-                break;
+    pub fn find_highest_joltage(self: BatteryBank, digits: u8) u64 {
+        var digits_found: u8 = 0;
+        var cur_idx: u64 = 0;
+        var answer: u64 = 0;
+
+        while (digits_found < digits) {
+            var highest_digit: u8 = 0;
+
+            for (self.batteries[cur_idx..], cur_idx..) |n, i| {
+                // need enough digits for remaining amount
+                if (i == self.batteries.len - (digits - digits_found - 1)) {
+                    break;
+                }
+
+                if (n > highest_digit) {
+                    highest_digit = n;
+                    cur_idx = i + 1;
+                }
             }
 
-            if (n > highest_first_digit) {
-                highest_first_digit = n;
-                first_digit_idx = i;
-            }
+            digits_found += 1;
+            answer += highest_digit * std.math.pow(u64, 10, @as(u64, digits - digits_found));
         }
 
-        var highest_second_digit: u8 = 0;
-        for (self.batteries[first_digit_idx + 1 ..]) |n| {
-            if (n > highest_second_digit) {
-                highest_second_digit = n;
-            }
-        }
-
-        return @as(u64, (highest_first_digit * 10) + highest_second_digit);
+        return answer;
     }
 };
 
@@ -78,4 +91,5 @@ test "AOC examples are right" {
     defer battery_banks.deinit(allocator);
 
     try std.testing.expectEqual(part1(battery_banks.items), 357);
+    try std.testing.expectEqual(part2(battery_banks.items), 3121910778619);
 }

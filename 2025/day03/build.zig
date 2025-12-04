@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const mod = b.addModule("day02", .{
+    const mod = b.addModule("day03", .{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     mod.addImport("advent_of_code_utils", advent_of_code_utils.module("advent_of_code_utils"));
 
     const exe = b.addExecutable(.{
-        .name = "day02",
+        .name = "day03",
         .root_module = mod,
     });
 

@@ -92,7 +92,7 @@ const Dial = struct {
 };
 
 test "AOC examples are right" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
 
     var turns = try read_file(allocator, "example.txt");
     defer turns.deinit(allocator);

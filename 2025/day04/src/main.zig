@@ -65,6 +65,11 @@ const Grid = struct {
             }
         }
 
+        // last clean up
+        if (i > 0) {
+            grid.deinit();
+        }
+
         return rolls;
     }
 
@@ -150,16 +155,16 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !Grid {
 
     const fileparser = utils.fileparse.TwoDimensionalArrayParser(GridSpot, Parser.parse).init(gpa);
 
-    const grid_as_lists = try fileparser.parse(filename);
+    var grid_as_lists = try fileparser.parse(filename);
 
     return Grid{
         .gpa = gpa,
-        .grid = try utils.slices.two_dimensional_arraylists_to_slices(gpa, GridSpot, grid_as_lists),
+        .grid = try utils.slices.two_dimensional_arraylists_to_slices(gpa, GridSpot, &grid_as_lists),
     };
 }
 
 test "AOC examples are right" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
     var grid = try read_file(allocator, "example.txt");
     defer grid.deinit();
 

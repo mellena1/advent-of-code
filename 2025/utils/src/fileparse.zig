@@ -48,7 +48,7 @@ pub fn PerLineParser(comptime T: type, comptime handle_line: fn (allocator: std.
 }
 
 test "basic u8 parsing per line" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
 
     const Parser = struct {
         fn parse(_: std.mem.Allocator, line: []const u8) !u8 {
@@ -112,7 +112,7 @@ pub fn TwoDimensionalArrayParser(comptime T: type, comptime handle_char: fn (all
 }
 
 test "Can parse 2D grid" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
 
     const Parser = struct {
         fn parse(_: std.mem.Allocator, c: u8) !u8 {
@@ -122,7 +122,12 @@ test "Can parse 2D grid" {
 
     const fileparser = TwoDimensionalArrayParser(u8, Parser.parse).init(allocator);
     var result = try fileparser.parse("test_data/grid_of_nums.txt");
-    defer result.deinit(allocator);
+    defer {
+        for (result.items) |*row| {
+            row.deinit(allocator);
+        }
+        result.deinit(allocator);
+    }
 
     const items = result.items;
 

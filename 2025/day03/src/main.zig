@@ -9,6 +9,7 @@ pub fn main() !void {
     const filename = try utils.args.get_file_name_from_args(allocator);
 
     const battery_banks = try read_file(allocator, filename);
+    defer deinit_banks(allocator, &battery_banks);
     std.debug.print("Part 1: {d}\n", .{find_sum_of_joltages(battery_banks.items, 2)});
     std.debug.print("Part 2: {d}\n", .{find_sum_of_joltages(battery_banks.items, 12)});
 }
@@ -25,6 +26,10 @@ fn find_sum_of_joltages(battery_banks: []BatteryBank, num_batteries: u8) u64 {
 
 const BatteryBank = struct {
     batteries: []u8,
+
+    pub fn deinit(self: BatteryBank, gpa: std.mem.Allocator) void {
+        gpa.free(self.batteries);
+    }
 
     pub fn find_highest_joltage(self: BatteryBank, digits: u8) u64 {
         var digits_found: u8 = 0;
@@ -75,10 +80,17 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Batter
     return fileparser.parse(filename);
 }
 
+fn deinit_banks(gpa: std.mem.Allocator, battery_banks: *std.ArrayList(BatteryBank)) void {
+    for (battery_banks.items) |*bank| {
+        bank.deinit(gpa);
+    }
+    battery_banks.deinit(gpa);
+}
+
 test "AOC examples are right" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
     var battery_banks = try read_file(allocator, "example.txt");
-    defer battery_banks.deinit(allocator);
+    defer deinit_banks(allocator, &battery_banks);
 
     try std.testing.expectEqual(find_sum_of_joltages(battery_banks.items, 2), 357);
     try std.testing.expectEqual(find_sum_of_joltages(battery_banks.items, 12), 3121910778619);

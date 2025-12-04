@@ -129,7 +129,7 @@ test "number_is_any_number_of_repeats works" {
 }
 
 test "AOC examples are right" {
-    const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
     var ranges = try read_file(allocator, "example.txt");
     defer ranges.deinit(allocator);
 

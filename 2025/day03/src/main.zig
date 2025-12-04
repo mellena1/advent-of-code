@@ -9,25 +9,15 @@ pub fn main() !void {
     const filename = try utils.args.get_file_name_from_args(allocator);
 
     const battery_banks = try read_file(allocator, filename);
-    std.debug.print("Part 1: {d}\n", .{part1(battery_banks.items)});
-    std.debug.print("Part 2: {d}\n", .{part2(battery_banks.items)});
+    std.debug.print("Part 1: {d}\n", .{find_sum_of_joltages(battery_banks.items, 2)});
+    std.debug.print("Part 2: {d}\n", .{find_sum_of_joltages(battery_banks.items, 12)});
 }
 
-fn part1(battery_banks: []BatteryBank) u64 {
+fn find_sum_of_joltages(battery_banks: []BatteryBank, num_batteries: u8) u64 {
     var sum: u64 = 0;
 
     for (battery_banks) |bank| {
-        sum += bank.find_highest_joltage(2);
-    }
-
-    return sum;
-}
-
-fn part2(battery_banks: []BatteryBank) u64 {
-    var sum: u64 = 0;
-
-    for (battery_banks) |bank| {
-        sum += bank.find_highest_joltage(12);
+        sum += bank.find_highest_joltage(num_batteries);
     }
 
     return sum;
@@ -90,6 +80,6 @@ test "AOC examples are right" {
     var battery_banks = try read_file(allocator, "example.txt");
     defer battery_banks.deinit(allocator);
 
-    try std.testing.expectEqual(part1(battery_banks.items), 357);
-    try std.testing.expectEqual(part2(battery_banks.items), 3121910778619);
+    try std.testing.expectEqual(find_sum_of_joltages(battery_banks.items, 2), 357);
+    try std.testing.expectEqual(find_sum_of_joltages(battery_banks.items, 12), 3121910778619);
 }

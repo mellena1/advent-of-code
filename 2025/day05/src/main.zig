@@ -30,12 +30,12 @@ const Range = struct {
     }
 
     pub fn combine(self: Range, r2: Range) RangeError!Range {
-        if (r2.start >= self.start and r2.start <= self.end) {
+        if (self.is_in_range(r2.start)) {
             return Range{
                 .start = self.start,
                 .end = @max(self.end, r2.end),
             };
-        } else if (self.start >= r2.start and self.start <= r2.end) {
+        } else if (r2.is_in_range(self.start)) {
             return Range{
                 .start = r2.start,
                 .end = @max(self.end, r2.end),

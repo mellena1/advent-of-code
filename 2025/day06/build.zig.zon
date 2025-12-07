@@ -1,0 +1,14 @@
+.{
+    .name = .day06,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+    },
+    .fingerprint = 0x62d64643b1220c3a,
+    .dependencies = .{
+        .advent_of_code_utils = .{ .path = "../utils" },
+    },
+}

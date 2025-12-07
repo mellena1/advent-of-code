@@ -219,3 +219,95 @@ test "can parse multi-section file" {
     try std.testing.expectEqualSlices(u64, &[_]u64{ 1, 2, 3, 4, 5 }, actual.@"0".items);
     try std.testing.expectEqualDeep(&[_][]const u8{ "abcd", "efgh" }, actual.@"1".items);
 }
+
+pub fn ColumnParser(comptime T: type, comptime handle_new_val: fn (gpa: std.mem.Allocator, cur: ?T, str: []const u8) anyerror!T, comptime deinit_T: fn (gpa: std.mem.Allocator, v: *T) void) type {
+    return struct {
+        gpa: std.mem.Allocator,
+
+        pub fn init(gpa: std.mem.Allocator) @This() {
+            return .{ .gpa = gpa };
+        }
+
+        pub fn parse(self: @This(), file_name: []const u8) !std.ArrayList(T) {
+            const file = try std.fs.cwd().openFile(file_name, .{ .mode = .read_only });
+            defer file.close();
+
+            var buffer: [4096]u8 = undefined;
+            var reader = file.reader(&buffer);
+
+            var columns = try std.ArrayList(T).initCapacity(self.gpa, 1024);
+            errdefer {
+                for (columns.items) |*v| {
+                    deinit_T(self.gpa, v);
+                }
+                columns.deinit(self.gpa);
+            }
+
+            while (reader.interface.takeDelimiter('\n')) |opt_line| {
+                if (opt_line == null) {
+                    break;
+                }
+
+                const line = opt_line.?;
+
+                // skip empty lines
+                if (line.len == 0) {
+                    continue;
+                }
+
+                var split = std.mem.tokenizeSequence(u8, line, " ");
+                var i: usize = 0;
+                while (split.next()) |v| : (i += 1) {
+                    if (i < columns.items.len) {
+                        const new_val = try handle_new_val(self.gpa, columns.items[i], v);
+                        columns.items[i] = new_val;
+                    } else {
+                        const new_val = try handle_new_val(self.gpa, null, v);
+                        try columns.append(self.gpa, new_val);
+                    }
+                }
+            } else |err| if (err != error.EndOfStream) return err;
+
+            return columns;
+        }
+    };
+}
+
+test "can parse columns" {
+    const allocator = std.testing.allocator;
+
+    const Parser = struct {
+        pub fn parse(gpa: std.mem.Allocator, cur: ?std.ArrayList(u64), str: []const u8) !std.ArrayList(u64) {
+            var list: std.ArrayList(u64) = if (cur == null)
+                std.ArrayList(u64).empty
+            else
+                cur.?;
+
+            const n = try std.fmt.parseInt(u64, str, 10);
+
+            try list.append(gpa, n);
+
+            return list;
+        }
+
+        pub fn deinit_T(gpa: std.mem.Allocator, v: *std.ArrayList(u64)) void {
+            v.deinit(gpa);
+        }
+    };
+
+    const parser = ColumnParser(std.ArrayList(u64), Parser.parse, Parser.deinit_T).init(allocator);
+
+    var actual = try parser.parse("test_data/columns.txt");
+    defer {
+        for (actual.items) |*l| {
+            l.deinit(allocator);
+        }
+        actual.deinit(allocator);
+    }
+
+    try std.testing.expectEqualSlices(u64, &.{ 1, 6 }, actual.items[0].items);
+    try std.testing.expectEqualSlices(u64, &.{ 2, 7 }, actual.items[1].items);
+    try std.testing.expectEqualSlices(u64, &.{ 3, 8 }, actual.items[2].items);
+    try std.testing.expectEqualSlices(u64, &.{ 4, 9 }, actual.items[3].items);
+    try std.testing.expectEqualSlices(u64, &.{ 5, 10 }, actual.items[4].items);
+}

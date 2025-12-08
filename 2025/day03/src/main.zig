@@ -14,7 +14,7 @@ pub fn main() !void {
     std.debug.print("Part 2: {d}\n", .{find_sum_of_joltages(battery_banks.items, 12)});
 }
 
-fn find_sum_of_joltages(battery_banks: []BatteryBank, num_batteries: u8) u64 {
+pub fn find_sum_of_joltages(battery_banks: []BatteryBank, num_batteries: u8) u64 {
     var sum: u64 = 0;
 
     for (battery_banks) |bank| {
@@ -24,7 +24,7 @@ fn find_sum_of_joltages(battery_banks: []BatteryBank, num_batteries: u8) u64 {
     return sum;
 }
 
-const BatteryBank = struct {
+pub const BatteryBank = struct {
     batteries: []u8,
 
     pub fn deinit(self: BatteryBank, gpa: std.mem.Allocator) void {
@@ -59,7 +59,7 @@ const BatteryBank = struct {
     }
 };
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(BatteryBank) {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(BatteryBank) {
     const Parser = struct {
         fn parse(allocator: std.mem.Allocator, line: []const u8) !BatteryBank {
             var list = try std.ArrayList(u8).initCapacity(allocator, line.len);
@@ -80,7 +80,7 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Batter
     return fileparser.parse(filename);
 }
 
-fn deinit_banks(gpa: std.mem.Allocator, battery_banks: *std.ArrayList(BatteryBank)) void {
+pub fn deinit_banks(gpa: std.mem.Allocator, battery_banks: *std.ArrayList(BatteryBank)) void {
     for (battery_banks.items) |*bank| {
         bank.deinit(gpa);
     }

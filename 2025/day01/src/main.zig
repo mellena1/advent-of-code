@@ -23,7 +23,7 @@ const TurnDirection = enum {
     right,
 };
 
-const Turn = struct {
+pub const Turn = struct {
     direction: TurnDirection,
     amount: u32,
 };
@@ -32,7 +32,7 @@ const ParseError = error{
     InvalidDirection,
 };
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) {
     const TurnParser = struct {
         fn parse(_: std.mem.Allocator, line: []const u8) !Turn {
             const dir = switch (line[0]) {
@@ -55,7 +55,7 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Turn) 
     return fileparser.parse(filename);
 }
 
-const Dial = struct {
+pub const Dial = struct {
     cur_pos: u8 = 50, // dial starts at 50
     times_at_zero: u32 = 0,
     times_passing_zero: u32 = 0,

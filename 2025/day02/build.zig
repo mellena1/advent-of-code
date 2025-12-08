@@ -17,6 +17,13 @@ pub fn build(b: *std.Build) void {
 
     mod.addImport("advent_of_code_utils", advent_of_code_utils.module("advent_of_code_utils"));
 
+    const zbench = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    mod.addImport("zbench", zbench.module("zbench"));
+
     const exe = b.addExecutable(.{
         .name = "day02",
         .root_module = mod,
@@ -41,4 +48,23 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_mod_tests.step);
+
+    const bench_mod = b.addModule("bench", .{
+        .root_source_file = b.path("src/bench.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    bench_mod.addImport("day02", mod);
+    bench_mod.addImport("zbench", zbench.module("zbench"));
+
+    const bench_exe = b.addExecutable(.{
+        .name = "bench",
+        .root_module = bench_mod,
+    });
+
+    const run_bench = b.addRunArtifact(bench_exe);
+
+    const bench_step = b.step("bench", "Run benchmarks");
+    bench_step.dependOn(&run_bench.step);
 }

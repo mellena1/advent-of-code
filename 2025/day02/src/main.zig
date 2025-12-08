@@ -18,7 +18,7 @@ pub fn main() !void {
     std.debug.print("Part 2: {d}\n", .{part2_answer});
 }
 
-fn sum_invalid_ids(gpa: std.mem.Allocator, ranges: []IDRange, is_invalid: fn (n: u64) anyerror!bool) !u64 {
+pub fn sum_invalid_ids(gpa: std.mem.Allocator, ranges: []IDRange, is_invalid: fn (n: u64) anyerror!bool) !u64 {
     var answer: u64 = 0;
 
     for (ranges) |range| {
@@ -32,7 +32,7 @@ fn sum_invalid_ids(gpa: std.mem.Allocator, ranges: []IDRange, is_invalid: fn (n:
     return answer;
 }
 
-const IDRange = struct {
+pub const IDRange = struct {
     start: u64,
     end: u64,
 
@@ -52,7 +52,7 @@ const IDRange = struct {
 
 const InvalidRange = error.InvalidRange;
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(IDRange) {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(IDRange) {
     const Parser = struct {
         fn parse(_: std.mem.Allocator, str: []const u8) !IDRange {
             const trimmed = std.mem.trim(u8, str, " \t\n\r");
@@ -75,7 +75,7 @@ fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(IDRang
     return fileparser.parse(filename);
 }
 
-fn number_is_double_sequence(n: u64) !bool {
+pub fn number_is_double_sequence(n: u64) !bool {
     var buf: [100]u8 = undefined;
     const n_as_str = try std.fmt.bufPrint(&buf, "{}", .{n});
 
@@ -94,7 +94,7 @@ test "number_is_double_sequence works" {
     try std.testing.expectEqual(try number_is_double_sequence(1122), false);
 }
 
-fn number_is_any_number_of_repeats(n: u64) !bool {
+pub fn number_is_any_number_of_repeats(n: u64) !bool {
     var buf: [100]u8 = undefined;
     const n_as_str = try std.fmt.bufPrint(&buf, "{}", .{n});
 

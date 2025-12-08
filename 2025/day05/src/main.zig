@@ -46,7 +46,7 @@ const Range = struct {
     }
 };
 
-const IngredientsList = struct {
+pub const IngredientsList = struct {
     fresh_database: []Range,
     ingredient_ids: []u64,
 
@@ -117,7 +117,7 @@ const IngredientsList = struct {
     }
 };
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !IngredientsList {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !IngredientsList {
     const RangeParser = struct {
         fn parse(_: std.mem.Allocator, line: []const u8) !Range {
             var split = std.mem.splitAny(u8, line, "-");

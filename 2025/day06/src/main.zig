@@ -19,7 +19,7 @@ pub fn main() !void {
     std.debug.print("Part 2: {d}\n", .{sum_formulas(formulas_p2.items)});
 }
 
-fn sum_formulas(formulas: []Formula) u64 {
+pub fn sum_formulas(formulas: []Formula) u64 {
     var answer: u64 = 0;
     for (formulas) |f| {
         answer += f.solve();
@@ -27,7 +27,7 @@ fn sum_formulas(formulas: []Formula) u64 {
     return answer;
 }
 
-fn deinit_formulas(gpa: std.mem.Allocator, formulas: *std.ArrayList(Formula)) void {
+pub fn deinit_formulas(gpa: std.mem.Allocator, formulas: *std.ArrayList(Formula)) void {
     for (formulas.items) |*f| {
         f.deinit(gpa);
     }
@@ -48,7 +48,7 @@ const Operator = enum {
     }
 };
 
-const Formula = struct {
+pub const Formula = struct {
     nums: std.ArrayList(u64),
     operator: Operator,
 
@@ -86,7 +86,7 @@ const Formula = struct {
     }
 };
 
-fn read_file_part_1(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Formula) {
+pub fn read_file_part_1(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Formula) {
     const Parser = struct {
         pub fn parse(allocator: std.mem.Allocator, cur: ?Formula, str: []const u8) !Formula {
             var formula: Formula = if (cur == null)
@@ -126,7 +126,7 @@ fn read_file_part_1(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList
     return try fileparser.parse(filename);
 }
 
-fn read_file_part_2(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Formula) {
+pub fn read_file_part_2(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(Formula) {
     const Parser = struct {
         pub fn parse(allocator: std.mem.Allocator, line: []const u8) ![]const u8 {
             return allocator.dupe(u8, line);

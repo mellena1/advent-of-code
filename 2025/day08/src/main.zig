@@ -18,43 +18,88 @@ fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u
     const dists = try get_sorted_list_of_distances(gpa, boxes);
     defer gpa.free(dists);
 
-    var nodes = std.AutoHashMap(JunctionBox, *Node).init(gpa);
+    var nodes = try std.ArrayList(Node).initCapacity(gpa, boxes.len);
     defer {
-        var iter = nodes.valueIterator();
-        while (iter.next()) |n| {
-            n.*.deinit(gpa);
+        for (nodes.items) |*n| {
+            n.deinit(gpa);
         }
-        nodes.deinit();
+        nodes.deinit(gpa);
     }
 
+    var nodes_map = std.AutoHashMap(JunctionBox, *Node).init(gpa);
+    defer nodes_map.deinit();
+
     // init nodes
-    for (boxes) |box| {
-        var n = Node{
+    for (boxes, 0..) |box, i| {
+        const n = Node{
             .box = box,
             .connections = std.ArrayList(*Node).empty,
         };
-        try nodes.put(box, &n);
+
+        nodes.appendAssumeCapacity(n);
+
+        try nodes_map.put(box, &nodes.items[i]);
     }
 
-    var connections_made: u64 = 0;
-
-    var i: u64 = 0;
-    while (connections_made < num_connections_needed) : (i += 1) {
+    for (0..num_connections_needed) |i| {
         const next_pair = dists[i];
 
-        const n1 = nodes.get(next_pair.box1).?;
-        const n2 = nodes.get(next_pair.box2).?;
+        const n1 = nodes_map.get(next_pair.box1).?;
+        const n2 = nodes_map.get(next_pair.box2).?;
 
-        if (n1.is_connected(n2.*)) {
-            std.debug.print("{any}\n", .{next_pair});
+        if (try n1.is_connected(gpa, n2.*)) {
             continue;
         }
 
         try n1.connect(gpa, n2);
-        connections_made += 1;
     }
 
-    return 0;
+    const circuits = try get_circuits(gpa, nodes.items);
+    defer {
+        for (circuits) |circuit| {
+            gpa.free(circuit);
+        }
+        gpa.free(circuits);
+    }
+    std.mem.sort([]JunctionBox, circuits, {}, desc_by_len(JunctionBox));
+
+    var answer: u64 = 1;
+
+    for (circuits[0..3]) |circuit| {
+        answer *= circuit.len;
+    }
+
+    return answer;
+}
+
+fn desc_by_len(comptime T: type) fn (void, []T, []T) bool {
+    const Sorter = struct {
+        fn less_than(_: void, a: []T, b: []T) bool {
+            return a.len > b.len;
+        }
+    };
+    return Sorter.less_than;
+}
+
+fn get_circuits(gpa: std.mem.Allocator, nodes: []Node) ![][]JunctionBox {
+    var visited = std.ArrayList(JunctionBox).empty;
+    defer visited.deinit(gpa);
+
+    var circuits = std.ArrayList([]JunctionBox).empty;
+    defer circuits.deinit(gpa);
+
+    for (nodes) |n| {
+        if (circuit_contains(visited.items, n.box)) {
+            continue;
+        }
+        const new_circuit = try n.get_circuit(gpa);
+        try circuits.append(gpa, new_circuit);
+        for (new_circuit) |box| {
+            try visited.append(gpa, box);
+        }
+    }
+
+    return circuits.toOwnedSlice(gpa);
 }
 
 const Node = struct {
@@ -65,9 +110,26 @@ const Node = struct {
         self.connections.deinit(gpa);
     }
 
-    pub fn is_connected(self: Node, other: Node) bool {
+    pub fn is_connected(self: Node, gpa: std.mem.Allocator, other: Node) !bool {
+        var visited = std.ArrayList(JunctionBox).empty;
+        defer visited.deinit(gpa);
+
+        return self.check_is_connected(gpa, other, &visited);
+    }
+
+    fn check_is_connected(self: Node, gpa: std.mem.Allocator, other: Node, visited: *std.ArrayList(JunctionBox)) !bool {
+        if (self.equals(other)) {
+            return true;
+        }
+
+        if (circuit_contains(visited.items, self.box)) {
+            return false;
+        }
+
+        try visited.append(gpa, self.box);
+
         for (self.connections.items) |n| {
-            if (n.equals(other) or n.is_connected(other)) {
+            if (try n.check_is_connected(gpa, other, visited)) {
                 return true;
             }
         }
@@ -84,7 +146,35 @@ const Node = struct {
     pub fn equals(self: Node, other: Node) bool {
         return self.box.equals(other.box);
     }
+
+    pub fn get_circuit(self: Node, gpa: std.mem.Allocator) ![]JunctionBox {
+        var circuit = std.ArrayList(JunctionBox).empty;
+        defer circuit.deinit(gpa);
+
+        try self.add_connections_to_circuit(gpa, &circuit);
+
+        return circuit.toOwnedSlice(gpa);
+    }
+
+    fn add_connections_to_circuit(self: Node, gpa: std.mem.Allocator, circuit: *std.ArrayList(JunctionBox)) !void {
+        try circuit.append(gpa, self.box);
+        for (self.connections.items) |n| {
+            if (!circuit_contains(circuit.items, n.box)) {
+                try n.add_connections_to_circuit(gpa, circuit);
+            }
+        }
+        return;
+    }
 };
+
+fn circuit_contains(circuit: []JunctionBox, box: JunctionBox) bool {
+    for (circuit) |other_box| {
+        if (box.equals(other_box)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 const DistancePairs = struct {
     box1: JunctionBox,

@@ -12,6 +12,7 @@ pub fn main() !void {
     defer grid.deinit(allocator);
 
     std.debug.print("Part 1: {d}\n", .{try grid.count_splits(allocator)});
+    std.debug.print("Part 2: {d}\n", .{try grid.count_timelines(allocator)});
 }
 
 const GridSpot = enum {
@@ -67,13 +68,7 @@ const Grid = struct {
     pub fn count_splits(self: Grid, gpa: std.mem.Allocator) !u64 {
         var active_beams = std.AutoHashMap(Point, void).init(gpa);
 
-        // Find start
-        for (self.grid[0], 0..) |v, x| {
-            if (v == .Start) {
-                try active_beams.put(Point{ .x = x, .y = 0 }, {});
-                break;
-            }
-        }
+        try active_beams.put(self.find_start(), {});
 
         var splits: u64 = 0;
 
@@ -88,6 +83,62 @@ const Grid = struct {
         active_beams.deinit();
 
         return splits;
+    }
+
+    pub fn count_timelines(self: Grid, gpa: std.mem.Allocator) !u64 {
+        var cache = std.AutoHashMap(Point, u64).init(gpa);
+        defer cache.deinit();
+
+        return self.dfs_beam_timelines(self.find_start(), &cache);
+    }
+
+    fn dfs_beam_timelines(self: Grid, beam: Point, cache: *std.AutoHashMap(Point, u64)) !u64 {
+        if (cache.get(beam)) |cached_timelines| {
+            return cached_timelines;
+        }
+
+        if (beam.y == self.grid.len - 1) {
+            return 1;
+        }
+
+        switch (self.grid[beam.y][beam.x]) {
+            .Nothing, .Start => {
+                const new_beam = beam.down_one();
+                if (self.is_in_grid(new_beam)) {
+                    const timelines = try self.dfs_beam_timelines(new_beam, cache);
+                    try cache.put(beam, timelines);
+                    return timelines;
+                }
+            },
+            .Splitter => {
+                var timelines: u64 = 0;
+
+                const left: ?Point = beam.left_and_down() catch null;
+                if (left != null and self.is_in_grid(left.?)) {
+                    timelines += try self.dfs_beam_timelines(left.?, cache);
+                }
+                const right = beam.right_and_down();
+                if (self.is_in_grid(right)) {
+                    timelines += try self.dfs_beam_timelines(right, cache);
+                }
+
+                try cache.put(beam, timelines);
+
+                return timelines;
+            },
+        }
+
+        unreachable;
+    }
+
+    fn find_start(self: Grid) Point {
+        for (self.grid[0], 0..) |v, x| {
+            if (v == .Start) {
+                return Point{ .x = x, .y = 0 };
+            }
+        }
+
+        unreachable;
     }
 
     fn get_next_beams(self: Grid, gpa: std.mem.Allocator, cur_beams: std.AutoHashMap(Point, void)) !struct { std.AutoHashMap(Point, void), u64 } {
@@ -155,4 +206,5 @@ test "AOC examples are right" {
     defer grid.deinit(allocator);
 
     try std.testing.expectEqual(21, try grid.count_splits(allocator));
+    try std.testing.expectEqual(40, try grid.count_timelines(allocator));
 }

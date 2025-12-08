@@ -12,6 +12,7 @@ pub fn main() !void {
     defer boxes.deinit(allocator);
 
     std.debug.print("Part 1: {d}\n", .{try part1(allocator, boxes.items, 1000)});
+    std.debug.print("Part 2: {d}\n", .{try part2(allocator, boxes.items)});
 }
 
 fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u64) !u64 {
@@ -70,6 +71,52 @@ fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u
     }
 
     return answer;
+}
+
+fn part2(gpa: std.mem.Allocator, boxes: []JunctionBox) !u64 {
+    const dists = try get_sorted_list_of_distances(gpa, boxes);
+    defer gpa.free(dists);
+
+    var nodes = try std.ArrayList(Node).initCapacity(gpa, boxes.len);
+    defer {
+        for (nodes.items) |*n| {
+            n.deinit(gpa);
+        }
+        nodes.deinit(gpa);
+    }
+
+    var nodes_map = std.AutoHashMap(JunctionBox, *Node).init(gpa);
+    defer nodes_map.deinit();
+
+    // init nodes
+    for (boxes, 0..) |box, i| {
+        const n = Node{
+            .box = box,
+            .connections = std.ArrayList(*Node).empty,
+        };
+
+        nodes.appendAssumeCapacity(n);
+
+        try nodes_map.put(box, &nodes.items[i]);
+    }
+
+    var connections_made: u64 = 0;
+    var i: u64 = 0;
+    while (connections_made < boxes.len - 1) : (i += 1) {
+        const next_pair = dists[i];
+
+        const n1 = nodes_map.get(next_pair.box1).?;
+        const n2 = nodes_map.get(next_pair.box2).?;
+
+        if (try n1.is_connected(gpa, n2.*)) {
+            continue;
+        }
+
+        try n1.connect(gpa, n2);
+        connections_made += 1;
+    }
+
+    return dists[i - 1].box1.x * dists[i - 1].box2.x;
 }
 
 fn desc_by_len(comptime T: type) fn (void, []T, []T) bool {
@@ -252,4 +299,5 @@ test "AOC examples are right" {
     defer boxes.deinit(allocator);
 
     try std.testing.expectEqual(40, try part1(allocator, boxes.items, 10));
+    try std.testing.expectEqual(25272, try part2(allocator, boxes.items));
 }

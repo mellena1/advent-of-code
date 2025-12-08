@@ -55,7 +55,7 @@ const Point = struct {
     }
 };
 
-const Grid = struct {
+pub const Grid = struct {
     grid: []const []const GridSpot,
 
     pub fn deinit(self: Grid, gpa: std.mem.Allocator) void {
@@ -177,7 +177,7 @@ const Grid = struct {
     }
 };
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !Grid {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !Grid {
     const Parser = struct {
         pub fn parse(_: std.mem.Allocator, c: u8) !GridSpot {
             return switch (c) {

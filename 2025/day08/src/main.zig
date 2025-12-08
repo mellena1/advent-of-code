@@ -15,7 +15,7 @@ pub fn main() !void {
     std.debug.print("Part 2: {d}\n", .{try part2(allocator, boxes.items)});
 }
 
-fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u64) !u64 {
+pub fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u64) !u64 {
     const dists = try get_sorted_list_of_distances(gpa, boxes);
     defer gpa.free(dists);
 
@@ -73,7 +73,7 @@ fn part1(gpa: std.mem.Allocator, boxes: []JunctionBox, num_connections_needed: u
     return answer;
 }
 
-fn part2(gpa: std.mem.Allocator, boxes: []JunctionBox) !u64 {
+pub fn part2(gpa: std.mem.Allocator, boxes: []JunctionBox) !u64 {
     const dists = try get_sorted_list_of_distances(gpa, boxes);
     defer gpa.free(dists);
 
@@ -256,7 +256,7 @@ fn get_sorted_list_of_distances(gpa: std.mem.Allocator, boxes: []JunctionBox) ![
     return pairs_slice;
 }
 
-const JunctionBox = struct {
+pub const JunctionBox = struct {
     x: usize,
     y: usize,
     z: usize,
@@ -276,7 +276,7 @@ fn difference_squared(n1: usize, n2: usize) f64 {
     return std.math.pow(f64, @as(f64, @floatFromInt(n1)) - @as(f64, @floatFromInt(n2)), 2.0);
 }
 
-fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(JunctionBox) {
+pub fn read_file(gpa: std.mem.Allocator, filename: []const u8) !std.ArrayList(JunctionBox) {
     const Parser = struct {
         pub fn parse(_: std.mem.Allocator, line: []const u8) !JunctionBox {
             var split = std.mem.splitAny(u8, line, ",");

@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    bench_mod.addImport("day08", mod);
+    bench_mod.addImport("day09", mod);
     bench_mod.addImport("zbench", zbench.module("zbench"));
 
     const bench_exe = b.addExecutable(.{

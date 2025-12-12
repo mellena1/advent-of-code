@@ -10,7 +10,7 @@ fn benchPart1(_: std.mem.Allocator) void {
 }
 
 fn benchPart2(_: std.mem.Allocator) void {
-    unreachable;
+    _ = day10.part2(test_manuals.items) catch unreachable;
 }
 
 pub fn main() !void {

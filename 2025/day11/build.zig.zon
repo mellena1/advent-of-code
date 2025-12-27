@@ -1,0 +1,18 @@
+.{
+    .name = .day11,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+    },
+    .fingerprint = 0xe5a9e2a12b67e8fb,
+    .dependencies = .{
+        .advent_of_code_utils = .{ .path = "../utils" },
+        .zbench = .{
+            .url = "git+https://github.com/hendriknielaender/zbench.git#main",
+            .hash = "zbench-0.11.2-YTdc7zolAQDlBF9i0ywXIvDjafL3Kg27S-aFUq6dU5zy",
+        },
+    },
+}

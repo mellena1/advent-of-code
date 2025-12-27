@@ -1,7 +1,6 @@
 const std = @import("std");
 
-/// Generic parser that reads in a file, splits by delimiter, and runs handler on every chunk to map to a list of type T
-pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (allocator: std.mem.Allocator, str: []const u8) anyerror!T) type {
+pub fn AccumulatorDelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (allocator: std.mem.Allocator, str: []const u8, acc: *T) anyerror!void) type {
     return struct {
         gpa: std.mem.Allocator,
 
@@ -9,15 +8,12 @@ pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handle
             return .{ .gpa = gpa };
         }
 
-        pub fn parse(self: @This(), file_name: []const u8) !std.ArrayList(T) {
+        pub fn parse(self: @This(), file_name: []const u8, acc: *T) !void {
             const file = try std.fs.cwd().openFile(file_name, .{ .mode = .read_only });
             defer file.close();
 
             var buffer: [4096]u8 = undefined;
             var reader = file.reader(&buffer);
-
-            var list = try std.ArrayList(T).initCapacity(self.gpa, 1024);
-            errdefer list.deinit(self.gpa);
 
             while (reader.interface.takeDelimiter(delimiter)) |opt_line| {
                 if (opt_line == null) {
@@ -31,10 +27,38 @@ pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handle
                     continue;
                 }
 
-                const new_item = try handler(self.gpa, line);
-
-                try list.append(self.gpa, new_item);
+                try handler(self.gpa, line, acc);
             } else |err| if (err != error.EndOfStream) return err;
+        }
+    };
+}
+
+pub fn AccumulatorPerLineParser(comptime T: type, comptime handle_line: fn (allocator: std.mem.Allocator, line: []const u8, acc: *T) anyerror!void) type {
+    return AccumulatorDelimiterParser(T, '\n', handle_line);
+}
+
+/// Generic parser that reads in a file, splits by delimiter, and runs handler on every chunk to map to a list of type T
+pub fn DelimiterParser(comptime T: type, comptime delimiter: u8, comptime handler: fn (allocator: std.mem.Allocator, str: []const u8) anyerror!T) type {
+    return struct {
+        gpa: std.mem.Allocator,
+
+        pub fn init(gpa: std.mem.Allocator) @This() {
+            return .{ .gpa = gpa };
+        }
+
+        pub fn parse(self: @This(), file_name: []const u8) !std.ArrayList(T) {
+            var list = try std.ArrayList(T).initCapacity(self.gpa, 1024);
+            errdefer list.deinit(self.gpa);
+
+            const Parser = struct {
+                pub fn parse(allocator: std.mem.Allocator, str: []const u8, acc: *std.ArrayList(T)) anyerror!void {
+                    try acc.append(allocator, try handler(allocator, str));
+                }
+            };
+
+            const parser = AccumulatorDelimiterParser(std.ArrayList(T), delimiter, Parser.parse).init(self.gpa);
+
+            try parser.parse(file_name, &list);
 
             return list;
         }

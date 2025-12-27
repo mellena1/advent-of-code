@@ -3,14 +3,14 @@ const zbench = @import("zbench");
 const day11 = @import("day11");
 
 // Global state to hold the test data (loaded once)
-var test_manuals: std.ArrayList(day11.ManualLine) = undefined;
+var test_server_rack: day11.ServerRack = undefined;
 
 fn benchPart1(_: std.mem.Allocator) void {
-    _ = day11.part1(test_manuals.items) catch unreachable;
+    _ = day11.part1(test_server_rack) catch unreachable;
 }
 
 fn benchPart2(_: std.mem.Allocator) void {
-    _ = day11.part2(test_manuals.items) catch unreachable;
+    _ = day11.part2(test_server_rack) catch unreachable;
 }
 
 pub fn main() !void {
@@ -19,13 +19,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     // Load data once for benchmarks (without file I/O in benchmark loop)
-    test_manuals = try day11.read_file(allocator, "input.txt");
-    defer {
-        for (test_manuals.items) |*m| {
-            m.deinit();
-        }
-        test_manuals.deinit(allocator);
-    }
+    test_server_rack = try day11.read_file(allocator, "input.txt");
+    defer test_server_rack.deinit();
 
     var bench = zbench.Benchmark.init(allocator, .{});
     defer bench.deinit();

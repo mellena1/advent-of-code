@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const mod = b.addModule("day10", .{
+    const mod = b.addModule("day11", .{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) void {
     mod.addImport("zbench", zbench.module("zbench"));
 
     const exe = b.addExecutable(.{
-        .name = "day10",
+        .name = "day11",
         .root_module = mod,
     });
 
@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    bench_mod.addImport("day10", mod);
+    bench_mod.addImport("day11", mod);
     bench_mod.addImport("zbench", zbench.module("zbench"));
 
     const bench_exe = b.addExecutable(.{
